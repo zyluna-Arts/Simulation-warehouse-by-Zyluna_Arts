@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zyluna_Arts | Smart 3D Logistics & Automated Warehouse Simulator</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Three.js & OrbitControls CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow: hidden;
+            background-color: #030712;
+            color: #f3f4f6;
+        }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        
+        /* Vibrant UI Panels with Glassmorphism */
+        .glass-brand {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            box-shadow: 0 8px 32px 0 rgba(124, 58, 237, 0.2);
+        }
+        .glass-stats {
+            background: rgba(17, 24, 39, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(236, 72, 153, 0.3);
+            box-shadow: 0 8px 32px 0 rgba(219, 39, 119, 0.2);
+        }
+        .glass-control {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(14, 165, 233, 0.3);
+            box-shadow: 0 8px 32px 0 rgba(2, 132, 199, 0.2);
+        }
+        
+        /* Vibrant Neon Tab Styles */
+        .tab-btn {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .tab-brand {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(236, 72, 153, 0.2));
+            border: 1px solid rgba(168, 85, 247, 0.5);
+            color: #d8b4fe;
+        }
+        .tab-brand:hover, .tab-brand.active {
+            background: linear-gradient(135deg, #8b5cf6, #ec4899);
+            color: #ffffff;
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.6);
+        }
+
+        .tab-heatmap {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(245, 158, 11, 0.2));
+            border: 1px solid rgba(248, 113, 113, 0.5);
+            color: #fca5a5;
+        }
+        .tab-heatmap:hover, .tab-heatmap.active {
+            background: linear-gradient(135deg, #ef4444, #f59e0b);
+            color: #ffffff;
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
+        }
+
+        .tab-routes {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(6, 182, 212, 0.2));
+            border: 1px solid rgba(52, 211, 153, 0.5);
+            color: #6ee7b7;
+        }
+        .tab-routes:hover, .tab-routes.active {
+            background: linear-gradient(135deg, #10b981, #06b6d4);
+            color: #ffffff;
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.6);
+        }
+
+        .tab-cam {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(99, 102, 241, 0.2));
+            border: 1px solid rgba(96, 165, 250, 0.5);
+            color: #93c5fd;
+        }
+        .tab-cam:hover, .tab-cam.active {
+            background: linear-gradient(135deg, #3b82f6, #6366f1);
+            color: #ffffff;
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.6);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
+        ::-webkit-scrollbar-thumb { background: #8b5cf6; border-radius: 4px; }
+
+        /* Glowing Animations */
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 0.8; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+        }
+        .badge-live {
+            animation: pulse-glow 2s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="relative w-screen h-screen">
+
+    <!-- 3D Canvas Container -->
+    <div id="canvas-container" class="absolute inset-0 w-full h-full"></div>
+
+    <!-- UI Overlay Header: Brand & Leadership Banner -->
+    <header class="absolute top-4 left-4 right-4 flex flex-wrap justify-between items-center gap-4 pointer-events-none z-10">
+        <!-- Logo & Company Tag -->
+        <div class="glass-brand rounded-2xl p-4 pointer-events-auto flex items-center gap-4 border-l-4 border-l-purple-500">
+            <div class="p-3 bg-gradient-to-tr from-purple-600 via-pink-500 to-amber-400 rounded-xl shadow-lg shadow-purple-500/30">
+                <i data-lucide="boxes" class="w-7 h-7 text-white"></i>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h1 class="text-2xl font-extrabold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-purple-300 via-pink-300 to-amber-200">
+                        Zyluna_Arts
+                    </h1>
+                    <span class="badge-live text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 uppercase tracking-widest flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span> Live System
+                    </span>
+                </div>
+                <p class="text-xs text-purple-200/80 font-medium flex items-center gap-1.5 mt-0.5">
+                    <i data-lucide="user-check" class="w-3.5 h-3.5 text-pink-400"></i>
+                    Direksi / Pimpinan: <span class="text-white font-semibold underline decoration-pink-500/50">Moch Zulfarqqar</span>
+                </p>
+            </div>
+        </div>
+
+        <!-- Quick Top Metrics -->
+        <div class="glass-stats rounded-2xl px-5 py-3 pointer-events-auto flex items-center gap-6 border-r-4 border-r-pink-500">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-blue-500/20 text-blue-400 rounded-lg">
+                    <i data-lucide="truck" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Truk Logistik</p>
+                    <p class="text-base font-bold text-white mono">3 Unit Active</p>
+                </div>
+            </div>
+            <div class="h-8 w-px bg-gray-700/60"></div>
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-pink-500/20 text-pink-400 rounded-lg">
+                    <i data-lucide="users" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Staff Gudang</p>
+                    <p class="text-base font-bold text-white mono" id="staff-count">4 Personil</p>
+                </div>
+            </div>
+            <div class="h-8 w-px bg-gray-700/60"></div>
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-amber-500/20 text-amber-400 rounded-lg">
+                    <i data-lucide="package-check" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Total Stok</p>
+                    <p class="text-base font-bold text-emerald-400 mono">1,840 Items</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- UI Panel Left: Interactive Multi-Colored Controls -->
+    <div class="absolute top-28 left-4 w-80 glass-control rounded-2xl p-5 pointer-events-auto z-10 flex flex-col gap-4 max-h-[calc(100vh-140px)] overflow-y-auto">
+        <h2 class="text-sm font-bold uppercase tracking-wider text-cyan-300 flex items-center gap-2 border-b border-cyan-500/20 pb-2">
+            <i data-lucide="sliders" class="w-4 h-4"></i> Control Center
+        </h2>
+
+        <!-- Tab 1: Heatmap Toggle (Vibrant Orange/Red) -->
+        <button id="btn-heatmap" class="tab-btn tab-heatmap w-full py-3 px-4 rounded-xl text-xs font-bold flex items-center justify-between">
+            <span class="flex items-center gap-2">
+                <i data-lucide="flame" class="w-4 h-4"></i> Heatmap Kepadatan Stok
+            </span>
+            <span id="badge-heatmap" class="text-[10px] px-2 py-0.5 rounded bg-black/40 border border-white/20">OFF</span>
+        </button>
+
+        <!-- Tab 2: AGV Route Lines Toggle (Vibrant Emerald/Cyan) -->
+        <button id="btn-routes" class="tab-btn tab-routes w-full py-3 px-4 rounded-xl text-xs font-bold flex items-center justify-between">
+            <span class="flex items-center gap-2">
+                <i data-lucide="route" class="w-4 h-4"></i> Rute Otomatis (Laser Lines)
+            </span>
+            <span id="badge-routes" class="text-[10px] px-2 py-0.5 rounded bg-black/40 border border-white/20">ON</span>
+        </button>
+
+        <!-- Speed Slider Control -->
+        <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-700/50">
+            <div class="flex justify-between items-center text-xs mb-2">
+                <span class="text-gray-300 font-medium flex items-center gap-1.5">
+                    <i data-lucide="gauge" class="w-4 h-4 text-amber-400"></i> Kecepatan Simulasi
+                </span>
+                <span id="speed-val" class="mono text-amber-400 font-bold">1.0x</span>
+            </div>
+            <input type="range" id="speed-slider" min="0.2" max="3.0" step="0.1" value="1.0" class="w-full accent-amber-500 bg-gray-700 h-1.5 rounded-lg appearance-none cursor-pointer">
+        </div>
+
+        <!-- Camera Views Selection (Vibrant Blue/Indigo) -->
+        <div>
+            <p class="text-xs text-blue-300 font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <i data-lucide="camera" class="w-3.5 h-3.5"></i> Sudut Kamera 3D
+            </p>
+            <div class="grid grid-cols-3 gap-2">
+                <button id="cam-iso" class="tab-btn tab-cam active py-2 px-2 rounded-lg text-[11px] font-bold text-center">Isometric</button>
+                <button id="cam-top" class="tab-btn tab-cam py-2 px-2 rounded-lg text-[11px] font-bold text-center">Top-Down</button>
+                <button id="cam-truck" class="tab-btn tab-cam py-2 px-2 rounded-lg text-[11px] font-bold text-center">Truk Cam</button>
+            </div>
+        </div>
+
+        <!-- Warehouse Staff / Personnel Stats List -->
+        <div class="border-t border-slate-700/50 pt-3">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-pink-300 flex items-center gap-1.5 mb-3">
+                <i data-lucide="user-check" class="w-4 h-4 text-pink-400"></i> Personil Gudang & Stats
+            </h3>
+            <div class="space-y-2.5" id="staff-list-container">
+                <!-- Dynamic Personnel Cards injected by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- UI Modal / Info Box for Clicking Objects -->
+    <div id="info-modal" class="hidden absolute bottom-6 right-6 w-80 glass-brand rounded-2xl p-5 pointer-events-auto z-20 border-l-4 border-l-amber-400 transition-all duration-300">
+        <div class="flex justify-between items-start mb-2">
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase" id="info-type">Cargo Box</span>
+            <button id="close-modal" class="text-gray-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <h3 class="text-lg font-bold text-white mb-1" id="info-title">Palet Kargo #A-102</h3>
+        <p class="text-xs text-gray-300 mb-3" id="info-desc">Deskripsi detail barang stok Zyluna_Arts.</p>
+        <div class="space-y-1.5 text-xs mono bg-slate-900/80 p-3 rounded-xl border border-slate-700/60" id="info-stats">
+            <!-- Dynamic stats inside modal -->
+        </div>
+    </div>
+
+    <!-- Script Application Code -->
+    <script>
+        // Personnel Data with Specific Stats
+        const staffData = [
+            { id: 1, name: "Budi Santoso", role: "Head Supervisor", status: "Active Inspecting", eff: "98%", color: "#ec4899", colorName: "Pink", targetPos: {x: 3, z: 2} },
+            { id: 2, name: "Rian Hidayat", role: "Forklift Operator", status: "Operating AGV-01", eff: "94%", color: "#3b82f6", colorName: "Blue", targetPos: {x: -12, z: 10} },
+            { id: 3, name: "Siti Rahma", role: "Inventory Checker", status: "Scanning Rack B", eff: "99%", color: "#10b981", colorName: "Emerald", targetPos: {x: -4, z: -8} },
+            { id: 4, name: "Andi Wijaya", role: "Logistics Specialist", status: "Truck Cargo Loading", eff: "91%", color: "#f59e0b", colorName: "Amber", targetPos: {x: 18, z: -15} }
+        ];
+
+        // Global Scene Variables
+        let scene, camera, renderer, controls;
+        let simSpeed = 1.0;
+        let heatmapActive = false;
+        let routesActive = true;
+
+        // Interactive meshes for Raycasting
+        const interactiveObjects = [];
+        const agvUnits = [];
+        const staffMeshes = [];
+        const routeLines = [];
+        const heatmapOverlays = [];
+
+        // Raycaster
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        // Initialize Scene
+        function init() {
+            const container = document.getElementById('canvas-container');
+
+            // Scene setup
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x030712);
+            scene.fog = new THREE.FogExp2(0x030712, 0.012);
+
+            // Camera setup
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(38, 30, 42);
+
+            // Renderer setup
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.outputEncoding = THREE.sRGBEncoding;
+            container.appendChild(renderer.domElement);
+
+            // Orbit Controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI / 2 - 0.02; // Prevent camera going below floor
+            controls.target.set(0, 2, 0);
+
+            // Lighting Setup
+            setupLighting();
+
+            // World Construction
+            createEnvironment();
+            createRacksAndCargo();
+            createBigLogisticsTrucks();
+            createAGVForklifts();
+            createStaffPersonnel();
+            createRouteLines();
+
+            // Populate UI Staff Cards
+            renderStaffUI();
+
+            // Event Listeners
+            window.addEventListener('resize', onWindowResize);
+            window.addEventListener('pointerdown', onPointerDown);
+
+            // Setup UI Control Events
+            setupUIEvents();
+
+            // Initialize Lucide Icons
+            lucide.createIcons();
+
+            // Animation Loop
+            animate();
+        }
+
+        // Lighting Configuration
+        function setupLighting() {
+            const ambientLight = new THREE.AmbientLight(0x1e1b4b, 1.2); // Soft blueish ambient
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+            dirLight.position.set(30, 40, 20);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 2048;
+            dirLight.shadow.mapSize.height = 2048;
+            dirLight.shadow.camera.near = 0.5;
+            dirLight.shadow.camera.far = 150;
+            const d = 40;
+            dirLight.shadow.camera.left = -d;
+            dirLight.shadow.camera.right = d;
+            dirLight.shadow.camera.top = d;
+            dirLight.shadow.camera.bottom = -d;
+            scene.add(dirLight);
+
+            // Highlighting Ceiling Lights (Industrial Warehouse Glow)
+            const ceilingSpots = [
+                {x: -10, z: -10, color: 0x8b5cf6},
+                {x: 0, z: 0, color: 0x3b82f6},
+                {x: 10, z: 10, color: 0xec4899}
+            ];
+            ceilingSpots.forEach(s => {
+                const pointLight = new THREE.PointLight(s.color, 1.8, 30);
+                pointLight.position.set(s.x, 14, s.z);
+                scene.add(pointLight);
+            });
+        }
+
+        // Floor Grid & Environment Building
+        function createEnvironment() {
+            // Main Floor
+            const floorGeo = new THREE.PlaneGeometry(80, 80);
+            const floorMat = new THREE.MeshStandardMaterial({
+                color: 0x0f172a,
+                roughness: 0.4,
+                metalness: 0.2
+            });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            scene.add(floor);
+
+            // Floor Grid Marking Lines
+            const gridHelper = new THREE.GridHelper(80, 40, 0x8b5cf6, 0x1e293b);
+            gridHelper.position.y = 0.02;
+            scene.add(gridHelper);
+
+            // Loading Dock Area Pattern (Outer Loading Zone)
+            const dockGeo = new THREE.PlaneGeometry(24, 76);
+            const dockMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6 });
+            const dock = new THREE.Mesh(dockGeo, dockMat);
+            dock.rotation.x = -Math.PI / 2;
+            dock.position.set(28, 0.01, 0);
+            dock.receiveShadow = true;
+            scene.add(dock);
+
+            // Yellow Caution Stripes on Loading Border
+            const stripeGeo = new THREE.PlaneGeometry(1, 76);
+            const stripeMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b });
+            const stripe = new THREE.Mesh(stripeGeo, stripeMat);
+            stripe.rotation.x = -Math.PI / 2;
+            stripe.position.set(15.8, 0.03, 0);
+            scene.add(stripe);
+
+            // Warehouse Wall Accents
+            const wallMat = new THREE.MeshStandardMaterial({ color: 0x0b0f19, roughness: 0.8 });
+            const backWallGeo = new THREE.BoxGeometry(80, 16, 1);
+            const backWall = new THREE.Mesh(backWallGeo, wallMat);
+            backWall.position.set(0, 8, -40);
+            scene.add(backWall);
+        }
+
+        // Create Racks & Interactive Cargo Boxes
+        function createRacksAndCargo() {
+            const rackMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8, roughness: 0.3 });
+            const boxColors = [0xa855f7, 0xec4899, 0x3b82f6, 0x10b981, 0xf59e0b];
+
+            // 6 Large Storage Racks Layout
+            const rackPositions = [
+                { x: -18, z: -18 }, { x: -6, z: -18 },
+                { x: -18, z: 0 },   { x: -6, z: 0 },
+                { x: -18, z: 18 },  { x: -6, z: 18 }
+            ];
+
+            rackPositions.forEach((pos, rackIdx) => {
+                const rackGroup = new THREE.Group();
+                rackGroup.position.set(pos.x, 0, pos.z);
+
+                // Frame Pillars
+                const pillarGeo = new THREE.BoxGeometry(0.4, 10, 0.4);
+                [ [-2.8, -4], [2.8, -4], [-2.8, 4], [2.8, 4] ].forEach(p => {
+                    const pillar = new THREE.Mesh(pillarGeo, rackMat);
+                    pillar.position.set(p[0], 5, p[1]);
+                    pillar.castShadow = true;
+                    rackGroup.add(pillar);
+                });
+
+                // Shelves (3 Tiers)
+                const shelfGeo = new THREE.BoxGeometry(6, 0.2, 8.4);
+                [1.5, 4.5, 7.5].forEach((levelY, tierIdx) => {
+                    const shelf = new THREE.Mesh(shelfGeo, rackMat);
+                    shelf.position.set(0, levelY, 0);
+                    shelf.receiveShadow = true;
+                    rackGroup.add(shelf);
+
+                    // Heatmap Overlay Plate under each tier
+                    const hmGeo = new THREE.PlaneGeometry(5.8, 8);
+                    // Higher tiers / inner racks have higher density color
+                    const densityVal = (rackIdx * 0.15 + tierIdx * 0.25) % 1.0;
+                    const hmColor = new THREE.Color().setHSL((1 - densityVal) * 0.7, 1.0, 0.5); // Red (high) to Blue (low)
+                    
+                    const hmMat = new THREE.MeshBasicMaterial({
+                        color: hmColor,
+                        transparent: true,
+                        opacity: 0, // Initially hidden
+                        side: THREE.DoubleSide
+                    });
+                    const hmPlate = new THREE.Mesh(hmGeo, hmMat);
+                    hmPlate.rotation.x = -Math.PI / 2;
+                    hmPlate.position.set(0, levelY + 0.05, 0);
+                    rackGroup.add(hmPlate);
+                    heatmapOverlays.push(hmMat);
+
+                    // Populate Shelf with Cargo Boxes
+                    for (let bx = -1.8; bx <= 1.8; bx += 1.8) {
+                        for (let bz = -2.8; bz <= 2.8; bz += 2.8) {
+                            if (Math.random() > 0.15) { // 85% occupancy
+                                const boxColor = boxColors[Math.floor(Math.random() * boxColors.length)];
+                                const boxMat = new THREE.MeshStandardMaterial({
+                                    color: boxColor,
+                                    roughness: 0.5,
+                                    metalness: 0.1
+                                });
+                                const boxGeo = new THREE.BoxGeometry(1.4, 1.2, 2.0);
+                                const box = new THREE.Mesh(boxGeo, boxMat);
+                                box.position.set(bx, levelY + 0.7, bz);
+                                box.castShadow = true;
+                                box.receiveShadow = true;
+
+                                // Custom Data for Raycast Modal
+                                box.userData = {
+                                    type: "Kargo Stok Zyluna_Arts",
+                                    sku: `ZY-${Math.floor(1000 + Math.random() * 9000)}`,
+                                    rack: `Rak #${rackIdx + 1} (Tier ${tierIdx + 1})`,
+                                    weight: `${(15 + Math.random() * 35).toFixed(1)} kg`,
+                                    status: "Verified & QC Passed"
+                                };
+
+                                rackGroup.add(box);
+                                interactiveObjects.push(box);
+                            }
+                        }
+                    }
+                });
+
+                scene.add(rackGroup);
+            });
+        }
+
+        // Create Big Logistics Semi-Trucks (Kendaraan Besar Logistik)
+        function createBigLogisticsTrucks() {
+            const truckPositions = [
+                { x: 28, z: -22, color: 0x8b5cf6, label: "Zyluna Express Cargo #01" },
+                { x: 28, z: 0, color: 0xec4899, label: "Zyluna Global Logistics #02" },
+                { x: 28, z: 22, color: 0x3b82f6, label: "Zyluna Heavy Transport #03" }
+            ];
+
+            truckPositions.forEach((tp) => {
+                const truckGroup = new THREE.Group();
+                truckGroup.position.set(tp.x, 0, tp.z);
+
+                // 1. Big Semi Trailer Container (Kontainer Besar)
+                const containerGeo = new THREE.BoxGeometry(16, 5.5, 4.8);
+                const containerMat = new THREE.MeshStandardMaterial({
+                    color: tp.color,
+                    metalness: 0.5,
+                    roughness: 0.3
+                });
+                const container = new THREE.Mesh(containerGeo, containerMat);
+                container.position.set(0, 3.8, 0);
+                container.castShadow = true;
+                truckGroup.add(container);
+
+                // Decorative Branding Stripe on Container
+                const stripeGeo = new THREE.BoxGeometry(16.1, 0.8, 4.82);
+                const stripeMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+                const stripe = new THREE.Mesh(stripeGeo, stripeMat);
+                stripe.position.set(0, 3.8, 0);
+                truckGroup.add(stripe);
+
+                // 2. Truck Front Cabin (Kepala Truk Besar)
+                const cabinGeo = new THREE.BoxGeometry(4.5, 4.2, 4.6);
+                const cabinMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8, roughness: 0.2 });
+                const cabin = new THREE.Mesh(cabinGeo, cabinMat);
+                cabin.position.set(10, 3.1, 0);
+                cabin.castShadow = true;
+                truckGroup.add(cabin);
+
+                // Cabin Windshield Glass
+                const glassGeo = new THREE.BoxGeometry(1.8, 1.8, 4.4);
+                const glassMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.7, roughness: 0.1 });
+                const glass = new THREE.Mesh(glassGeo, glassMat);
+                glass.position.set(11.2, 3.8, 0);
+                truckGroup.add(glass);
+
+                // 3. Heavy Duty Wheels (Roda Truck - 8 pasang)
+                const wheelGeo = new THREE.CylinderGeometry(0.9, 0.9, 0.8, 16);
+                const wheelMat = new THREE.MeshStandardMaterial({ color: 0x090d16, roughness: 0.9 });
+                const wheelXPositions = [-6, -3, 0, 3, 8.5, 10.5];
+
+                wheelXPositions.forEach(wx => {
+                    [-2.3, 2.3].forEach(wz => {
+                        const wheel = new THREE.Mesh(wheelGeo, wheelMat);
+                        wheel.rotation.z = Math.PI / 2;
+                        wheel.position.set(wx, 0.9, wz);
+                        wheel.castShadow = true;
+                        truckGroup.add(wheel);
+                    });
+                });
+
+                // Custom Data for Truck Raycast
+                container.userData = {
+                    type: "Truk Logistik Besar",
+                    sku: tp.label,
+                    rack: "Zone Loading Dock A",
+                    weight: "24.5 Ton (Kapasitas Maksimal)",
+                    status: "Siap Departure / Unloading"
+                };
+                interactiveObjects.push(container);
+
+                scene.add(truckGroup);
+            });
+        }
+
+        // Create AGV Autonomous Forklifts
+        function createAGVForklifts() {
+            const agvSpecs = [
+                { id: "AGV-01", color: 0x8b5cf6, pathR: 12, speed: 0.015, offset: 0 },
+                { id: "AGV-02", color: 0xf59e0b, pathR: 20, speed: 0.012, offset: Math.PI }
+            ];
+
+            agvSpecs.forEach(spec => {
+                const agvGroup = new THREE.Group();
+
+                // Base Body
+                const bodyGeo = new THREE.BoxGeometry(2.8, 1.0, 1.8);
+                const bodyMat = new THREE.MeshStandardMaterial({ color: spec.color, metalness: 0.6, roughness: 0.3 });
+                const body = new THREE.Mesh(bodyGeo, bodyMat);
+                body.position.y = 0.7;
+                body.castShadow = true;
+                agvGroup.add(body);
+
+                // Warning Beacon Light on Top
+                const beaconGeo = new THREE.CylinderGeometry(0.15, 0.15, 0.3);
+                const beaconMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+                const beacon = new THREE.Mesh(beaconGeo, beaconMat);
+                beacon.position.set(-1, 1.35, 0);
+                agvGroup.add(beacon);
+
+                // Forklift Lifting Frame
+                const forkFrameGeo = new THREE.BoxGeometry(0.2, 2.2, 1.4);
+                const forkFrameMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.9 });
+                const forkFrame = new THREE.Mesh(forkFrameGeo, forkFrameMat);
+                forkFrame.position.set(1.4, 1.3, 0);
+                agvGroup.add(forkFrame);
+
+                // Cargo Box carried by AGV
+                const carriedBoxGeo = new THREE.BoxGeometry(1.2, 1.0, 1.4);
+                const carriedBoxMat = new THREE.MeshStandardMaterial({ color: 0x10b981 });
+                const carriedBox = new THREE.Mesh(carriedBoxGeo, carriedBoxMat);
+                carriedBox.position.set(2.0, 1.0, 0);
+                agvGroup.add(carriedBox);
+
+                scene.add(agvGroup);
+
+                agvUnits.push({
+                    group: agvGroup,
+                    spec: spec,
+                    angle: spec.offset
+                });
+            });
+        }
+
+        // Create Animated Staff / Warehouse Personnel 3D Models
+        function createStaffPersonnel() {
+            staffData.forEach((st) => {
+                const personGroup = new THREE.Group();
+                personGroup.position.set(st.targetPos.x, 0, st.targetPos.z);
+
+                const skinMat = new THREE.MeshStandardMaterial({ color: 0xfbcfe8, roughness: 0.6 });
+                const shirtMat = new THREE.MeshStandardMaterial({ color: st.color, roughness: 0.4 });
+                const pantsMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 });
+                const vestMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.2 }); // Safety Vest
+
+                // 1. Legs
+                const legGeo = new THREE.CylinderGeometry(0.12, 0.12, 1.1);
+                const legL = new THREE.Mesh(legGeo, pantsMat);
+                legL.position.set(-0.2, 0.55, 0);
+                const legR = new THREE.Mesh(legGeo, pantsMat);
+                legR.position.set(0.2, 0.55, 0);
+                personGroup.add(legL, legR);
+
+                // 2. Torso with Safety Vest
+                const torsoGeo = new THREE.BoxGeometry(0.7, 1.1, 0.4);
+                const torso = new THREE.Mesh(torsoGeo, shirtMat);
+                torso.position.set(0, 1.65, 0);
+                torso.castShadow = true;
+                personGroup.add(torso);
+
+                const vestGeo = new THREE.BoxGeometry(0.75, 0.9, 0.45);
+                const vest = new THREE.Mesh(vestGeo, vestMat);
+                vest.position.set(0, 1.65, 0);
+                personGroup.add(vest);
+
+                // 3. Head & Safety Helmet
+                const headGeo = new THREE.SphereGeometry(0.25, 16, 16);
+                const head = new THREE.Mesh(headGeo, skinMat);
+                head.position.set(0, 2.4, 0);
+                personGroup.add(head);
+
+                const helmetGeo = new THREE.CylinderGeometry(0.3, 0.32, 0.2, 16);
+                const helmetMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.5 }); // Yellow Helmet
+                const helmet = new THREE.Mesh(helmetGeo, helmetMat);
+                helmet.position.set(0, 2.58, 0);
+                personGroup.add(helmet);
+
+                // 4. Arms & Clipboard Scanner
+                const armGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.9);
+                const armL = new THREE.Mesh(armGeo, shirtMat);
+                armL.position.set(-0.45, 1.65, 0.1);
+                armL.rotation.x = -Math.PI / 4;
+                personGroup.add(armL);
+
+                const armR = new THREE.Mesh(armGeo, shirtMat);
+                armR.position.set(0.45, 1.65, 0.1);
+                armR.rotation.x = -Math.PI / 4;
+                personGroup.add(armR);
+
+                // Interactive Raycast Click Data for Staff
+                torso.userData = {
+                    type: "Personil Staff Zyluna_Arts",
+                    sku: st.name,
+                    rack: st.role,
+                    weight: `Efisiensi Kerja: ${st.eff}`,
+                    status: st.status
+                };
+                interactiveObjects.push(torso);
+
+                scene.add(personGroup);
+                staffMeshes.push({ group: personGroup, data: st });
+            });
+        }
+
+        // Create Animated Glowing Route Lines
+        function createRouteLines() {
+            const routePaths = [
+                // Inner Route Loop
+                [
+                    new THREE.Vector3(-12, 0.08, -12),
+                    new THREE.Vector3(12, 0.08, -12),
+                    new THREE.Vector3(12, 0.08, 12),
+                    new THREE.Vector3(-12, 0.08, 12),
+                    new THREE.Vector3(-12, 0.08, -12)
+                ],
+                // Outer Truck Loading Route Loop
+                [
+                    new THREE.Vector3(-20, 0.08, -22),
+                    new THREE.Vector3(20, 0.08, -22),
+                    new THREE.Vector3(20, 0.08, 22),
+                    new THREE.Vector3(-20, 0.08, 22),
+                    new THREE.Vector3(-20, 0.08, -22)
+                ]
+            ];
+
+            routePaths.forEach((pathPoints, idx) => {
+                const curve = new THREE.CatmullRomCurve3(pathPoints);
+                const points = curve.getPoints(100);
+                const geometry = new THREE.BufferGeometry().setFromPoints(points);
+
+                const material = new THREE.LineBasicMaterial({
+                    color: idx === 0 ? 0x10b981 : 0x06b6d4,
+                    linewidth: 3,
+                    transparent: true,
+                    opacity: 0.8
+                });
+
+                const line = new THREE.Line(geometry, material);
+                scene.add(line);
+                routeLines.push(line);
+            });
+        }
+
+        // Populate Left UI Panel with Personnel Cards
+        function renderStaffUI() {
+            const container = document.getElementById('staff-list-container');
+            container.innerHTML = staffData.map(s => `
+                <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-700/60 hover:border-pink-500/50 transition-all cursor-pointer" onclick="focusOnStaff(${s.id})">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-xs font-bold text-white flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full" style="background-color: ${s.color};"></span>
+                            ${s.name}
+                        </span>
+                        <span class="text-[10px] font-bold text-emerald-400 mono">${s.eff}</span>
+                    </div>
+                    <div class="flex justify-between items-center text-[10px] text-gray-400">
+                        <span>${s.role}</span>
+                        <span class="text-pink-300 font-medium">${s.status}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Focus Camera on Selected Personnel
+        window.focusOnStaff = function(staffId) {
+            const target = staffMeshes.find(s => s.data.id === staffId);
+            if (target) {
+                const pos = target.group.position;
+                gsapCameraMove(pos.x + 5, 6, pos.z + 5, pos.x, 1, pos.z);
+            }
+        };
+
+        // Smooth Camera Animation Helper
+        function gsapCameraMove(px, py, pz, tx, ty, tz) {
+            let progress = 0;
+            const startPos = camera.position.clone();
+            const startTarget = controls.target.clone();
+            const endPos = new THREE.Vector3(px, py, pz);
+            const endTarget = new THREE.Vector3(tx, ty, tz);
+
+            function animCam() {
+                progress += 0.04;
+                if (progress <= 1) {
+                    camera.position.lerpVectors(startPos, endPos, progress);
+                    controls.target.lerpVectors(startTarget, endTarget, progress);
+                    controls.update();
+                    requestAnimationFrame(animCam);
+                }
+            }
+            animCam();
+        }
+
+        // UI Event Handlers
+        function setupUIEvents() {
+            // Speed Slider
+            const speedSlider = document.getElementById('speed-slider');
+            const speedVal = document.getElementById('speed-val');
+            speedSlider.addEventListener('input', (e) => {
+                simSpeed = parseFloat(e.target.value);
+                speedVal.textContent = simSpeed.toFixed(1) + 'x';
+            });
+
+            // Heatmap Toggle
+            const btnHeatmap = document.getElementById('btn-heatmap');
+            const badgeHeatmap = document.getElementById('badge-heatmap');
+            btnHeatmap.addEventListener('click', () => {
+                heatmapActive = !heatmapActive;
+                btnHeatmap.classList.toggle('active', heatmapActive);
+                badgeHeatmap.textContent = heatmapActive ? 'ON' : 'OFF';
+                
+                heatmapOverlays.forEach(mat => {
+                    mat.opacity = heatmapActive ? 0.65 : 0;
+                });
+            });
+
+            // Route Lines Toggle
+            const btnRoutes = document.getElementById('btn-routes');
+            const badgeRoutes = document.getElementById('badge-routes');
+            btnRoutes.addEventListener('click', () => {
+                routesActive = !routesActive;
+                btnRoutes.classList.toggle('active', routesActive);
+                badgeRoutes.textContent = routesActive ? 'ON' : 'OFF';
+
+                routeLines.forEach(line => {
+                    line.visible = routesActive;
+                });
+            });
+
+            // Camera Presets
+            document.getElementById('cam-iso').addEventListener('click', () => {
+                gsapCameraMove(38, 30, 42, 0, 2, 0);
+            });
+            document.getElementById('cam-top').addEventListener('click', () => {
+                gsapCameraMove(0, 55, 0.1, 0, 0, 0);
+            });
+            document.getElementById('cam-truck').addEventListener('click', () => {
+                gsapCameraMove(36, 8, 0, 28, 4, 0);
+            });
+
+            // Modal Close
+            document.getElementById('close-modal').addEventListener('click', () => {
+                document.getElementById('info-modal').classList.add('hidden');
+            });
+        }
+
+        // Raycasting Hover / Click Selection
+        function onPointerDown(event) {
+            // Disable click if clicking on HTML UI
+            if (event.clientX < 340 && event.clientY < 600) return;
+
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(interactiveObjects);
+
+            if (intersects.length > 0) {
+                const hit = intersects[0].object;
+                if (hit.userData && hit.userData.sku) {
+                    showModal(hit.userData);
+                }
+            }
+        }
+
+        function showModal(data) {
+            const modal = document.getElementById('info-modal');
+            document.getElementById('info-type').textContent = data.type;
+            document.getElementById('info-title').textContent = data.sku;
+            document.getElementById('info-desc').textContent = `Lokasi / Sektor: ${data.rack}`;
+            
+            document.getElementById('info-stats').innerHTML = `
+                <div class="flex justify-between"><span class="text-gray-400">Status:</span><span class="text-emerald-400 font-bold">${data.status}</span></div>
+                <div class="flex justify-between"><span class="text-gray-400">Spesifikasi:</span><span class="text-pink-300 font-bold">${data.weight}</span></div>
+                <div class="flex justify-between"><span class="text-gray-400">Sistem Perusahaan:</span><span class="text-purple-300">Zyluna_Arts DBMS</span></div>
+            `;
+            modal.classList.remove('hidden');
+        }
+
+        // Window Resize Listener
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // Main Animation Render Loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // 1. Move AGV Vehicles
+            agvUnits.forEach(agv => {
+                agv.angle += agv.spec.speed * simSpeed;
+                const r = agv.spec.pathR;
+                agv.group.position.x = Math.cos(agv.angle) * r;
+                agv.group.position.z = Math.sin(agv.angle) * r;
+                agv.group.rotation.y = -agv.angle + Math.PI / 2;
+            });
+
+            // 2. Animate Personnel Idle Movements
+            staffMeshes.forEach((st, idx) => {
+                const time = Date.now() * 0.003 + idx;
+                st.group.position.y = Math.sin(time) * 0.05; // Subtle breathing / idle motion
+            });
+
+            // 3. Update Controls
+            controls.update();
+
+            // Render
+            renderer.render(scene, camera);
+        }
+
+        // Run Application
+        window.onload = init;
+    </script>
+</body>
+</html>
